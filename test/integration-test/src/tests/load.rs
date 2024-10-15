@@ -1,10 +1,10 @@
-use std::{convert::TryInto as _, fs::remove_file, path::Path, thread, time::Duration};
+use std::{convert::TryInto as _, fs::remove_file, fs::File, path::Path, thread, time::Duration};
 
 use aya::{
     maps::Array,
     programs::{
         links::{FdLink, PinnedLink},
-        loaded_links, loaded_programs, KProbe, TracePoint, UProbe, Xdp, XdpFlags,
+        loaded_links, loaded_programs, FlowDissector, KProbe, TracePoint, UProbe, Xdp, XdpFlags,
     },
     util::KernelVersion,
     Ebpf,
@@ -308,6 +308,34 @@ fn basic_uprobe() {
     prog.unload().unwrap();
 
     assert_unloaded("test_uprobe");
+}
+
+#[test]
+fn basic_flow_dissector() {
+    let mut bpf = Bpf::load(crate::TEST).unwrap();
+    let prog: &mut FlowDissector = bpf.program_mut("test_flow").unwrap().try_into().unwrap();
+
+    prog.load().unwrap();
+    assert_loaded("test_flow");
+
+    let net_ns = File::open("/proc/self/ns/net").unwrap();
+    let link = prog.attach(net_ns.try_clone().unwrap()).unwrap();
+    {
+        let _link_owned = prog.take_link(link).unwrap();
+        prog.unload().unwrap();
+        assert_loaded_and_linked("test_flow");
+    };
+
+    assert_unloaded("test_flow");
+    prog.load().unwrap();
+
+    assert_loaded("test_flow");
+    prog.attach(net_ns).unwrap();
+
+    assert_loaded("test_flow");
+    prog.unload().unwrap();
+
+    assert_unloaded("test_flow");
 }
 
 #[test]
