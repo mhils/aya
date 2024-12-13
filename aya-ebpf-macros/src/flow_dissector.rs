@@ -23,8 +23,8 @@ impl FlowDissector {
         Ok(quote! {
             #[no_mangle]
             #[link_section = "flow_dissector"]
-            #fn_vis fn #fn_name(ctx: *mut ::aya_bpf::bindings::__sk_buff) -> u32 {
-                return #fn_name(::aya_bpf::programs::FlowDissectorContext::new(ctx));
+            #fn_vis fn #fn_name(ctx: *mut ::aya_ebpf::bindings::__sk_buff) -> u32 {
+                return #fn_name(::aya_ebpf::programs::FlowDissectorContext::new(ctx));
 
                 #item
             }
@@ -43,7 +43,7 @@ mod tests {
         let prog = FlowDissector::parse(
             parse_quote! {},
             parse_quote! {
-                fn prog(ctx: &mut ::aya_bpf::programs::FlowDissectorContext) -> u32 {
+                fn prog(ctx: &mut ::aya_ebpf::programs::FlowDissectorContext) -> u32 {
                     0
                 }
             },
@@ -53,10 +53,10 @@ mod tests {
         let expected = quote! {
             #[no_mangle]
             #[link_section = "flow_dissector"]
-            fn prog(ctx: *mut ::aya_bpf::bindings::__sk_buff) -> u32 {
-                return prog(::aya_bpf::programs::FlowDissectorContext::new(ctx));
+            fn prog(ctx: *mut ::aya_ebpf::bindings::__sk_buff) -> u32 {
+                return prog(::aya_ebpf::programs::FlowDissectorContext::new(ctx));
 
-                fn prog(ctx: &mut ::aya_bpf::programs::FlowDissectorContext) -> u32 {
+                fn prog(ctx: &mut ::aya_ebpf::programs::FlowDissectorContext) -> u32 {
                     0
                 }
             }
